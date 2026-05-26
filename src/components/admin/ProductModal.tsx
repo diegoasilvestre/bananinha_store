@@ -217,18 +217,65 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
   const fetchLibraryImages = async () => {
     setLoadingLibrary(true);
     try {
-      const { data, error: err } = await supabase.storage
+      const { data: rootData, error: rootError } = await supabase.storage
         .from('products')
-        .list('images', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+        .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
-      if (err) throw err;
+      if (rootError) throw rootError;
 
-      const urls = (data || [])
-        .filter((file: { name: string }) => file.name !== '.emptyFolderPlaceholder')
-        .map((file: { name: string }) => {
+      interface FileWithTimestamp {
+        path: string;
+        createdAt: string;
+      }
+
+      const files: FileWithTimestamp[] = [];
+      const items = (rootData || []) as unknown as {
+        name: string;
+        id: string | null;
+        created_at: string | null;
+        metadata: Record<string, unknown> | null;
+      }[];
+
+      for (const item of items) {
+        if (item.name === '.emptyFolderPlaceholder') continue;
+
+        if (item.id && item.metadata) {
+          files.push({
+            path: item.name,
+            createdAt: item.created_at || new Date(0).toISOString()
+          });
+        } else {
+          const { data: subData, error: subError } = await supabase.storage
+            .from('products')
+            .list(item.name, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+
+          if (subError) {
+            console.error(`Erro ao listar subpasta ${item.name}:`, subError);
+            continue;
+          }
+
+          const subItems = (subData || []) as unknown as {
+            name: string;
+            created_at: string | null;
+          }[];
+
+          for (const subItem of subItems) {
+            if (subItem.name === '.emptyFolderPlaceholder') continue;
+            files.push({
+              path: `${item.name}/${subItem.name}`,
+              createdAt: subItem.created_at || new Date(0).toISOString()
+            });
+          }
+        }
+      }
+
+      files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      const urls = files
+        .map((file) => {
           const { data: urlData } = supabase.storage
             .from('products')
-            .getPublicUrl(`images/${file.name}`);
+            .getPublicUrl(file.path);
           return urlData?.publicUrl || '';
         })
         .filter(Boolean);
