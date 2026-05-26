@@ -70,7 +70,7 @@ export function TrackPage() {
           .limit(100);
 
         const matched = (recentOrders || []).find(
-          (o) => o.id.toLowerCase().startsWith(cleanId.toLowerCase()) || 
+          (o: { id: string }) => o.id.toLowerCase().startsWith(cleanId.toLowerCase()) || 
                  o.id.toLowerCase().endsWith(cleanId.toLowerCase())
         );
 

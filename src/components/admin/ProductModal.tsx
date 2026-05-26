@@ -224,8 +224,8 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
       if (err) throw err;
 
       const urls = (data || [])
-        .filter((file) => file.name !== '.emptyFolderPlaceholder')
-        .map((file) => {
+        .filter((file: { name: string }) => file.name !== '.emptyFolderPlaceholder')
+        .map((file: { name: string }) => {
           const { data: urlData } = supabase.storage
             .from('products')
             .getPublicUrl(`images/${file.name}`);

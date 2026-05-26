@@ -174,7 +174,7 @@ export function AdminPage() {
       if (varErr) throw varErr;
 
       const mappedProducts = (prodData || []).map((p: Product) => {
-        const prodVars = (varData || []).filter((v) => v.product_id === p.id);
+        const prodVars = (varData || []).filter((v: { product_id: string }) => v.product_id === p.id);
         return {
           ...p,
           variations: prodVars
@@ -207,7 +207,7 @@ export function AdminPage() {
       if (itemsErr) throw itemsErr;
 
       const mappedOrders = (orderData || []).map((o: Order) => {
-        const orderItems = (itemsData || []).filter((i) => i.order_id === o.id);
+        const orderItems = (itemsData || []).filter((i: { order_id: string }) => i.order_id === o.id);
         return {
           ...o,
           items: orderItems
@@ -235,7 +235,7 @@ export function AdminPage() {
       if (data) {
         setSettingsList(data as StoreSetting[]);
         const dict: Record<string, string> = {};
-        data.forEach((s) => {
+        data.forEach((s: { key: string; value: string }) => {
           dict[s.key] = s.value;
         });
         setSettings(dict);

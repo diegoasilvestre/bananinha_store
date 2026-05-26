@@ -157,7 +157,8 @@ export function useProducts() {
       product.variations = (varData || []) as ProductVariation[];
 
       // Incremental view count asynchronously
-      supabase.rpc('increment_views', { product_id: product.id }).then(({ error: rpcErr }) => {
+      supabase.rpc('increment_views', { product_id: product.id }).then((res) => {
+        const rpcErr = res.error;
         if (rpcErr) {
           // Fallback to manual update if RPC is not deployed yet
           supabase
