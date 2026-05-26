@@ -57,13 +57,13 @@ export function Footer() {
         {/* Security / Badges */}
         <div className="space-y-4">
           <h3 className="font-heading text-sm text-branco tracking-wider uppercase">Pagamento Seguro</h3>
-          <p className="font-light mb-2">Processado de forma 100% segura via Mercado Pago.</p>
+          <p className="font-light mb-2">Processado de forma 100% segura via InfinitePay.</p>
           <div className="flex space-x-2 flex-wrap gap-y-2">
             <span className="bg-cinza-escuro text-branco px-2 py-1 rounded text-xxs font-semibold">PIX</span>
             <span className="bg-cinza-escuro text-branco px-2 py-1 rounded text-xxs font-semibold">CARTÃO DE CRÉDITO</span>
             <span className="bg-cinza-escuro text-branco px-2 py-1 rounded text-xxs font-semibold">BOLETO</span>
           </div>
-          <p className="text-[10px] text-cinza-escuro mt-2">Ambiente de teste local - Conectado ao Supabase</p>
+          <p className="text-[10px] text-cinza-escuro mt-2">Felizes em atendê-los, um prazer ter você aqui!</p>
         </div>
       </div>
 

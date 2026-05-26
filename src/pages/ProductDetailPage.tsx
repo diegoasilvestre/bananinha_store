@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingBag, ChevronRight, Truck, ShieldCheck, Mail, Sparkles, ChevronLeft, ZoomIn, ZoomOut, X } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Truck, ShieldCheck, Mail, Sparkles, ChevronLeft, ZoomIn, ZoomOut, X, Ruler } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import type { Product, ProductVariation } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
@@ -8,6 +8,7 @@ import { ProductCard } from '../components/product/ProductCard';
 import { supabase } from '../lib/supabase';
 import { triggerWhatsAppNotification } from '../lib/whatsapp';
 import { useSEO } from '../hooks/useSEO';
+import { useSettings } from '../context/SettingsContext';
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -24,8 +25,21 @@ export function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState('');
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const [hoverStyle, setHoverStyle] = useState<React.CSSProperties>({});
 
   const allImages = product ? [product.main_image, ...(product.images || [])].filter(Boolean) as string[] : [];
+
+  const handleThumbnailClick = (img: string, idx: number) => {
+    setActiveImage(img);
+    if (galleryRef.current) {
+      const width = galleryRef.current.clientWidth;
+      galleryRef.current.scrollTo({
+        left: width * idx,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -33,7 +47,7 @@ export function ProductDetailPage() {
     if (allImages.length <= 1) return;
     const currentIndex = allImages.indexOf(activeImage);
     const prevIndex = currentIndex === 0 ? allImages.length - 1 : currentIndex - 1;
-    setActiveImage(allImages[prevIndex]);
+    handleThumbnailClick(allImages[prevIndex], prevIndex);
   };
 
   const handleNextImage = (e: React.MouseEvent) => {
@@ -42,13 +56,40 @@ export function ProductDetailPage() {
     if (allImages.length <= 1) return;
     const currentIndex = allImages.indexOf(activeImage);
     const nextIndex = currentIndex === allImages.length - 1 ? 0 : currentIndex + 1;
-    setActiveImage(allImages[nextIndex]);
+    handleThumbnailClick(allImages[nextIndex], nextIndex);
+  };
+
+  const handleGalleryScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const scrollLeft = container.scrollLeft;
+    const width = container.clientWidth;
+    if (width === 0) return;
+    const newIndex = Math.round(scrollLeft / width);
+    if (allImages[newIndex] && allImages[newIndex] !== activeImage) {
+      setActiveImage(allImages[newIndex]);
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setHoverStyle({
+      transformOrigin: `${x}% ${y}%`,
+      transform: 'scale(1.5)',
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setHoverStyle({});
   };
   const [related, setRelated] = useState<Product[]>([]);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [alertEmail, setAlertEmail] = useState('');
   const [alertSuccess, setAlertSuccess] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const { settings } = useSettings();
 
   // Customization states
   const [isCustomized, setIsCustomized] = useState(false);
@@ -196,6 +237,42 @@ export function ProductDetailPage() {
     };
     loadProductData();
   }, [slug, getProductBySlug, getRelatedProducts]);
+
+  // Inject JSON-LD Product schema for Google Rich Results
+  useEffect(() => {
+    if (!product) return;
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: product.short_desc || product.description || '',
+      image: [product.main_image, ...(product.images || [])].filter(Boolean),
+      sku: product.sku,
+      brand: { '@type': 'Brand', name: 'Bananinha Store' },
+      offers: {
+        '@type': 'Offer',
+        priceCurrency: 'BRL',
+        price: (product.sale_price ?? product.regular_price).toFixed(2),
+        availability: product.variations?.some((v) => v.stock > 0)
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+        url: window.location.href,
+        seller: { '@type': 'Organization', name: 'Bananinha Store' }
+      }
+    };
+    let script = document.getElementById('product-jsonld') as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'product-jsonld';
+      script.type = 'application/ld+json';
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(schema);
+    return () => {
+      const el = document.getElementById('product-jsonld');
+      if (el) el.remove();
+    };
+  }, [product]);
 
   const isPreOrder = product?.available_at ? new Date(product.available_at) > new Date() : false;
 
@@ -381,23 +458,41 @@ export function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
           {/* Shirt Image Display */}
           <div className="flex flex-col space-y-4 w-full">
-            <div 
-              onClick={() => activeImage && setIsLightboxOpen(true)}
-              className="relative max-w-md mx-auto aspect-[3/4] w-full bg-branco border border-cinza-claro rounded-lg flex items-center justify-center p-4 overflow-hidden shadow-xs group cursor-zoom-in"
-            >
-              {activeImage ? (
-                <img
-                  src={activeImage}
-                  alt={product.name}
-                  className="max-h-full max-w-full object-contain hover:scale-105 transition-smooth"
-                />
-              ) : (
-                <span className="text-cinza-escuro/40 uppercase tracking-widest text-xs">Sem Imagem</span>
-              )}
+            <div className="relative max-w-md mx-auto aspect-[3/4] w-full bg-branco border border-cinza-claro rounded-lg overflow-hidden shadow-xs group">
+              
+              {/* Scroll Snap Swipeable Container */}
+              <div 
+                ref={galleryRef}
+                onScroll={handleGalleryScroll}
+                className="flex overflow-x-auto scroll-snap-x snap-mandatory scrollbar-none h-full w-full"
+              >
+                {allImages.length > 0 ? (
+                  allImages.map((img, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => setIsLightboxOpen(true)}
+                      onMouseMove={handleMouseMove}
+                      onMouseLeave={handleMouseLeave}
+                      className="w-full h-full flex-shrink-0 snap-start flex items-center justify-center p-4 cursor-zoom-in relative overflow-hidden"
+                    >
+                      <img
+                        src={img}
+                        alt={`${product.name} - Imagem ${idx + 1}`}
+                        style={activeImage === img ? hoverStyle : {}}
+                        className="max-h-full max-w-full object-contain transition-transform duration-100 ease-out"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-cinza-escuro/40 uppercase tracking-widest text-xs">Sem Imagem</span>
+                  </div>
+                )}
+              </div>
 
               {/* Magnifying Glass Indicator on Hover */}
               {activeImage && (
-                <div className="absolute top-3 right-3 bg-preto/70 text-branco p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow pointer-events-none">
+                <div className="absolute top-3 right-3 bg-preto/70 text-branco p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow pointer-events-none z-10">
                   <ZoomIn className="h-4 w-4" />
                 </div>
               )}
@@ -408,7 +503,7 @@ export function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={handlePrevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-preto/70 hover:bg-dourado text-branco hover:text-preto p-2 rounded-full transition-smooth opacity-0 group-hover:opacity-100 z-10 shadow"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-preto/70 hover:bg-dourado text-branco hover:text-preto p-2 rounded-full transition-smooth opacity-0 group-hover:opacity-100 z-10 shadow cursor-pointer"
                     aria-label="Imagem anterior"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -416,7 +511,7 @@ export function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={handleNextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-preto/70 hover:bg-dourado text-branco hover:text-preto p-2 rounded-full transition-smooth opacity-0 group-hover:opacity-100 z-10 shadow"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-preto/70 hover:bg-dourado text-branco hover:text-preto p-2 rounded-full transition-smooth opacity-0 group-hover:opacity-100 z-10 shadow cursor-pointer"
                     aria-label="Próxima imagem"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -431,8 +526,8 @@ export function ProductDetailPage() {
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setActiveImage(img)}
-                    className={`w-14 h-14 rounded border-2 flex-shrink-0 overflow-hidden bg-branco transition-smooth ${
+                    onClick={() => handleThumbnailClick(img, idx)}
+                    className={`w-14 h-14 rounded border-2 flex-shrink-0 overflow-hidden bg-branco transition-smooth cursor-pointer ${
                       activeImage === img ? 'border-dourado shadow-sm' : 'border-cinza-claro hover:border-cinza-escuro'
                     }`}
                   >
@@ -478,7 +573,18 @@ export function ProductDetailPage() {
 
             {/* Size selector */}
             <div className="space-y-3">
-              <h3 className="font-heading text-sm text-preto tracking-wider uppercase">Tamanhos Disponíveis</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-heading text-sm text-preto tracking-wider uppercase">Tamanhos Disponíveis</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsSizeGuideOpen(true)}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-verde-escuro hover:text-verde-medio transition-smooth underline underline-offset-2"
+                  aria-label="Ver guia de tamanhos"
+                >
+                  <Ruler className="h-3 w-3" />
+                  Ver guia de tamanhos
+                </button>
+              </div>
               {product.variations && product.variations.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {product.variations.map((v) => {
@@ -1013,6 +1119,106 @@ export function ProductDetailPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Size Guide Modal */}
+      {isSizeGuideOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Guia de tamanhos"
+        >
+          <div
+            className="absolute inset-0 bg-preto/70 backdrop-blur-sm"
+            onClick={() => setIsSizeGuideOpen(false)}
+          />
+          <div className="relative bg-branco rounded-xl shadow-2xl max-w-2xl w-full mx-auto overflow-hidden z-10 animate-fade-in">
+            {/* Header */}
+            <div className="bg-verde-escuro text-branco px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ruler className="h-5 w-5 text-dourado" />
+                <h2 className="font-heading text-xl tracking-wider">GUIA DE TAMANHOS</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSizeGuideOpen(false)}
+                aria-label="Fechar guia de tamanhos"
+                className="text-branco/70 hover:text-branco transition-smooth"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[75vh]">
+              {/* Custom image from admin settings */}
+              {settings.size_guide_url && (
+                <img
+                  src={settings.size_guide_url}
+                  alt="Tabela de medidas"
+                  className="w-full rounded-lg border border-cinza-claro object-contain max-h-64"
+                  loading="lazy"
+                />
+              )}
+
+              {/* Sizing table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-verde-escuro text-branco">
+                      <th className="px-4 py-2.5 text-left font-heading tracking-wider">Tamanho</th>
+                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Busto (cm)</th>
+                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Comprimento (cm)</th>
+                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Manga (cm)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: 'PP', busto: '44–46', comp: '68–70', manga: '21–23' },
+                      { size: 'P', busto: '48–50', comp: '70–72', manga: '23–25' },
+                      { size: 'M', busto: '52–54', comp: '72–74', manga: '25–27' },
+                      { size: 'G', busto: '56–58', comp: '74–76', manga: '27–29' },
+                      { size: 'GG', busto: '60–62', comp: '76–78', manga: '29–31' },
+                      { size: 'XGG', busto: '64–66', comp: '78–80', manga: '31–33' },
+                    ].map((row, idx) => {
+                      const variation = product.variations?.find((v) => v.size === row.size);
+                      const isOutOfStockSize = variation ? variation.stock <= 0 : false;
+                      const isSelected = selectedVariation?.size === row.size;
+                      return (
+                        <tr
+                          key={row.size}
+                          className={`border-b border-cinza-claro transition-smooth ${
+                            idx % 2 === 0 ? 'bg-cinza-claro/20' : 'bg-branco'
+                          } ${isSelected ? 'ring-1 ring-inset ring-verde-escuro' : ''}`}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="font-heading text-sm text-preto">{row.size}</span>
+                              {isOutOfStockSize && (
+                                <span className="text-[9px] bg-vermelho-alerta/10 text-vermelho-alerta px-1.5 py-0.5 rounded font-bold uppercase">Esgotado</span>
+                              )}
+                              {isSelected && (
+                                <span className="text-[9px] bg-verde-claro/30 text-verde-escuro px-1.5 py-0.5 rounded font-bold uppercase">Selecionado</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.busto}</td>
+                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.comp}</td>
+                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.manga}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="text-[10px] text-cinza-escuro font-light leading-relaxed border-t border-cinza-claro pt-4">
+                Medidas em centímetros. As camisetas de futebol têm corte esportivo levemente largo.
+                Em caso de dúvida, prefira um tamanho acima. Para tirar sua medida de busto, passe a fita métrica na parte mais larga do tórax.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

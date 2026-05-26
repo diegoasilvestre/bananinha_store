@@ -4,14 +4,15 @@ import { Filter, X, Search } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import type { Product, Category } from '../hooks/useProducts';
 import { ProductCard } from '../components/product/ProductCard';
+import { ProductCardSkeleton } from '../components/product/ProductCardSkeleton';
 import { useSEO } from '../hooks/useSEO';
-
-// Dynamic grouping helper - no static slugs arrays required.
+import { supabase } from '../lib/supabase';
 
 export function ProductsPage() {
   const { getProducts, getCategories, loading } = useProducts();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [seasons, setSeasons] = useState<string[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -19,6 +20,13 @@ export function ProductsPage() {
   const categoryFilter = searchParams.get('category') || '';
   const teamTypeFilter = searchParams.get('team_type') || '';
   const searchFilter = searchParams.get('search') || '';
+  const seasonFilter = searchParams.get('season') || '';
+  const priceMinFilter = searchParams.get('price_min') || '';
+  const priceMaxFilter = searchParams.get('price_max') || '';
+
+  // Local states for price inputs to prevent over-fetching on keystroke
+  const [priceMinInput, setPriceMinInput] = useState(priceMinFilter);
+  const [priceMaxInput, setPriceMaxInput] = useState(priceMaxFilter);
 
   // Dynamic SEO based on active filters
   const activeCategoryName = categories.find(c => c.slug === categoryFilter)?.name;
@@ -33,10 +41,37 @@ export function ProductsPage() {
     description: `Confira nossa coleção premium de mantos de futebol. Encontre camisas de clubes e seleções para o seu time do coração${activeCategoryName ? ` como ${activeCategoryName}` : ''}.`
   });
 
+  // Sync price inputs with search parameter when URL changes
+  useEffect(() => {
+    setPriceMinInput(priceMinFilter);
+  }, [priceMinFilter]);
+
+  useEffect(() => {
+    setPriceMaxInput(priceMaxFilter);
+  }, [priceMaxFilter]);
+
   useEffect(() => {
     const loadFiltersData = async () => {
       const cats = await getCategories();
       setCategories(cats);
+
+      // Fetch dynamic list of seasons from active products
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('season')
+          .eq('active', true);
+        if (!error && data) {
+          const uniqueSeasons = Array.from(
+            new Set(data.map((p) => p.season).filter(Boolean))
+          ) as string[];
+          // Sort seasons descending
+          uniqueSeasons.sort((a, b) => b.localeCompare(a));
+          setSeasons(uniqueSeasons);
+        }
+      } catch (e) {
+        console.error('Failed to load seasons:', e);
+      }
     };
     loadFiltersData();
   }, [getCategories]);
@@ -57,12 +92,15 @@ export function ProductsPage() {
       const prods = await getProducts({
         categoryId: categoryIds,
         teamType: teamTypeFilter || undefined,
+        season: seasonFilter || undefined,
         search: searchFilter || undefined,
+        priceMin: priceMinFilter ? Number(priceMinFilter) : undefined,
+        priceMax: priceMaxFilter ? Number(priceMaxFilter) : undefined,
       });
       setProducts(prods);
     };
     loadProductsData();
-  }, [categories, categoryFilter, teamTypeFilter, searchFilter, getProducts]);
+  }, [categories, categoryFilter, teamTypeFilter, seasonFilter, searchFilter, priceMinFilter, priceMaxFilter, getProducts]);
 
   const updateFilter = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -74,8 +112,31 @@ export function ProductsPage() {
     setSearchParams(newParams);
   };
 
+  const applyPriceFilter = () => {
+    const newParams = new URLSearchParams(searchParams);
+    if (priceMinInput) {
+      newParams.set('price_min', priceMinInput);
+    } else {
+      newParams.delete('price_min');
+    }
+    if (priceMaxInput) {
+      newParams.set('price_max', priceMaxInput);
+    } else {
+      newParams.delete('price_max');
+    }
+    setSearchParams(newParams);
+  };
+
+  const handlePriceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      applyPriceFilter();
+    }
+  };
+
   const clearFilters = () => {
     setSearchParams(new URLSearchParams());
+    setPriceMinInput('');
+    setPriceMaxInput('');
   };
 
   return (
@@ -87,7 +148,7 @@ export function ProductsPage() {
             <Filter className="h-5 w-5 text-verde-medio" />
             <span>FILTROS</span>
           </h2>
-          {(categoryFilter || teamTypeFilter || searchFilter) && (
+          {(categoryFilter || teamTypeFilter || searchFilter || seasonFilter || priceMinFilter || priceMaxFilter) && (
             <button
               type="button"
               onClick={clearFilters}
@@ -202,6 +263,69 @@ export function ProductsPage() {
             ))}
           </div>
         </div>
+
+        {/* Season Filter */}
+        {seasons.length > 0 && (
+          <div className="space-y-3 border-t border-cinza-claro pt-6">
+            <h3 className="font-heading text-sm text-preto tracking-wider uppercase">Temporada</h3>
+            <div className="flex flex-col space-y-2 text-sm">
+              <button
+                type="button"
+                onClick={() => updateFilter('season', '')}
+                className={`text-left hover:text-verde-medio transition-smooth py-1 ${!seasonFilter ? 'text-verde-medio font-semibold' : 'text-cinza-escuro'}`}
+              >
+                Todas as Temporadas
+              </button>
+              {seasons.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => updateFilter('season', s)}
+                  className={`text-left hover:text-verde-medio transition-smooth py-1 ${seasonFilter === s ? 'text-verde-medio font-semibold' : 'text-cinza-escuro'}`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Price Range Filter */}
+        <div className="space-y-3 border-t border-cinza-claro pt-6">
+          <h3 className="font-heading text-sm text-preto tracking-wider uppercase">Faixa de Preço</h3>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-2 text-[9px] text-cinza-escuro/60 font-bold">MIN</span>
+              <input
+                type="number"
+                placeholder="R$ 0"
+                value={priceMinInput}
+                onChange={(e) => setPriceMinInput(e.target.value)}
+                onKeyDown={handlePriceKeyDown}
+                className="w-full bg-branco border border-cinza-claro rounded text-xs pl-8 pr-1.5 py-2 focus:outline-none focus:ring-1 focus:ring-verde-medio text-preto font-semibold"
+              />
+            </div>
+            <span className="text-cinza-escuro/40 font-light">-</span>
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-2 text-[9px] text-cinza-escuro/60 font-bold">MAX</span>
+              <input
+                type="number"
+                placeholder="R$ 500"
+                value={priceMaxInput}
+                onChange={(e) => setPriceMaxInput(e.target.value)}
+                onKeyDown={handlePriceKeyDown}
+                className="w-full bg-branco border border-cinza-claro rounded text-xs pl-8 pr-1.5 py-2 focus:outline-none focus:ring-1 focus:ring-verde-medio text-preto font-semibold"
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={applyPriceFilter}
+            className="w-full bg-preto hover:bg-verde-medio text-branco text-[10px] py-2 rounded font-bold tracking-wider transition-smooth cursor-pointer"
+          >
+            FILTRAR PREÇO
+          </button>
+        </div>
       </aside>
 
       {/* Main products area */}
@@ -231,7 +355,7 @@ export function ProductsPage() {
           <button
             type="button"
             onClick={() => setMobileFiltersOpen(true)}
-            className="lg:hidden w-full bg-verde-escuro text-branco py-3 rounded flex items-center justify-center space-x-2 text-sm font-semibold hover:bg-verde-medio transition-smooth"
+            className="lg:hidden w-full bg-verde-escuro text-branco py-3 rounded flex items-center justify-center space-x-2 text-sm font-semibold hover:bg-verde-medio transition-smooth cursor-pointer"
           >
             <Filter className="h-4 w-4" />
             <span>FILTRAR PRODUTOS</span>
@@ -239,23 +363,19 @@ export function ProductsPage() {
         </div>
 
         {/* Products Grid */}
-          {loading ? (
-            <div className="grid-products-fluid">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <div key={n} className="bg-branco rounded-lg overflow-hidden border border-cinza-claro animate-pulse p-4 space-y-4">
-                  <div className="aspect-square bg-cinza-claro rounded"></div>
-                  <div className="h-4 bg-cinza-claro rounded w-2/3"></div>
-                  <div className="h-6 bg-cinza-claro rounded w-1/3"></div>
-                </div>
-              ))}
-            </div>
+        {loading ? (
+          <div className="grid-products-fluid">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <ProductCardSkeleton key={n} />
+            ))}
+          </div>
         ) : products.length === 0 ? (
           <div className="text-center py-20 bg-branco rounded-lg border border-cinza-claro space-y-4">
             <p className="text-cinza-escuro font-light">Nenhum manto sagrado corresponde aos filtros selecionados.</p>
             <button
               type="button"
               onClick={clearFilters}
-              className="bg-verde-escuro hover:bg-verde-medio text-branco px-6 py-2.5 rounded text-sm font-semibold tracking-wider transition-smooth"
+              className="bg-verde-escuro hover:bg-verde-medio text-branco px-6 py-2.5 rounded text-sm font-semibold tracking-wider transition-smooth cursor-pointer"
             >
               VER TODAS AS CAMISETAS
             </button>
@@ -274,7 +394,7 @@ export function ProductsPage() {
         <div className="fixed inset-0 z-50 overflow-hidden lg:hidden" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-preto/50 backdrop-blur-xs" onClick={() => setMobileFiltersOpen(false)}></div>
           <div className="absolute inset-y-0 left-0 pr-10 max-w-full flex">
-            <div className="w-screen max-w-xs bg-branco p-6 flex flex-col space-y-6 animate-slide-in-left shadow-2xl">
+            <div className="w-screen max-w-xs bg-branco p-6 flex flex-col space-y-6 animate-slide-in-left shadow-2xl overflow-y-auto">
               <div className="flex items-center justify-between border-b border-cinza-claro pb-4">
                 <h2 className="font-heading text-lg tracking-wide flex items-center space-x-2">
                   <Filter className="h-5 w-5 text-verde-medio" />
@@ -290,7 +410,7 @@ export function ProductsPage() {
               </div>
 
               {/* Mobile Categories / Clubs Grouped */}
-              <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+              <div className="space-y-3">
                 <h3 className="font-heading text-xs tracking-wider uppercase text-preto border-b pb-1">Clubes / Seleções</h3>
                 <div className="flex flex-col space-y-1 text-sm">
                   <button
@@ -393,6 +513,67 @@ export function ProductsPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Mobile Season Filter */}
+              {seasons.length > 0 && (
+                <div className="space-y-3 border-t border-cinza-claro pt-4">
+                  <h3 className="font-heading text-xs tracking-wider uppercase text-preto">Temporada</h3>
+                  <div className="flex flex-col space-y-1.5 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => { updateFilter('season', ''); setMobileFiltersOpen(false); }}
+                      className={`text-left py-1 ${!seasonFilter ? 'text-verde-medio font-semibold' : 'text-cinza-escuro'}`}
+                    >
+                      Todas as Temporadas
+                    </button>
+                    {seasons.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => { updateFilter('season', s); setMobileFiltersOpen(false); }}
+                        className={`text-left py-1 ${seasonFilter === s ? 'text-verde-medio font-semibold' : 'text-cinza-escuro'}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Price Range Filter */}
+              <div className="space-y-3 border-t border-cinza-claro pt-4 pb-8">
+                <h3 className="font-heading text-xs tracking-wider uppercase text-preto">Faixa de Preço</h3>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-2 top-2.5 text-[8px] text-cinza-escuro/60 font-bold">MIN</span>
+                    <input
+                      type="number"
+                      placeholder="R$ 0"
+                      value={priceMinInput}
+                      onChange={(e) => setPriceMinInput(e.target.value)}
+                      className="w-full bg-branco border border-cinza-claro rounded text-xs pl-7 pr-1 py-2 focus:outline-none focus:ring-1 focus:ring-verde-medio text-preto font-semibold"
+                    />
+                  </div>
+                  <span className="text-cinza-escuro/40 font-light">-</span>
+                  <div className="relative flex-1">
+                    <span className="absolute left-2 top-2.5 text-[8px] text-cinza-escuro/60 font-bold">MAX</span>
+                    <input
+                      type="number"
+                      placeholder="R$ 500"
+                      value={priceMaxInput}
+                      onChange={(e) => setPriceMaxInput(e.target.value)}
+                      className="w-full bg-branco border border-cinza-claro rounded text-xs pl-7 pr-1 py-2 focus:outline-none focus:ring-1 focus:ring-verde-medio text-preto font-semibold"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { applyPriceFilter(); setMobileFiltersOpen(false); }}
+                  className="w-full bg-preto text-branco text-[9px] py-2 rounded font-bold tracking-wider transition-smooth cursor-pointer"
+                >
+                  FILTRAR PREÇO
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -400,3 +581,4 @@ export function ProductsPage() {
     </div>
   );
 }
+export default ProductsPage;

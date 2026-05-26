@@ -54,5 +54,14 @@ export function useSEO({ title, description, image, url }: SEOMetadata) {
     } else {
       setMetaTag('name', 'twitter:image', 'https://bananinha-store.pages.dev/logo.png');
     }
+
+    // 5. Canonical URL
+    let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', url || window.location.href);
   }, [title, description, image, url]);
 }

@@ -10,7 +10,11 @@ import {
   RefreshCw, 
   ShieldAlert, 
   Check,
-  FolderTree
+  FolderTree,
+  BarChart2,
+  TrendingUp,
+  Package,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -109,7 +113,17 @@ export function AdminPage() {
   const [isAdminBypassed, setIsAdminBypassed] = useState(false);
 
   // UI Tabs
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'orders' | 'settings' | 'alerts'>('products');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'settings' | 'alerts'>('dashboard');
+
+  // Dashboard metrics state
+  const [metrics, setMetrics] = useState<{
+    revenueMonth: number;
+    ordersToday: number;
+    avgTicket: number;
+    topProducts: { name: string; total: number }[];
+    ordersByDay: { date: string; count: number }[];
+  } | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
 
   // Products Tab States
   const [products, setProducts] = useState<Product[]>([]);
@@ -247,7 +261,67 @@ export function AdminPage() {
     }
   }, []);
 
-  // 4. Fetch Alerts
+  // 4. Fetch Dashboard Metrics
+  const fetchMetrics = useCallback(async () => {
+    setMetricsLoading(true);
+    try {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [monthlyRes, todayRes, allOrdersRes, itemsRes] = await Promise.all([
+        supabase.from('orders').select('total_amount').eq('status', 'paid').gte('created_at', startOfMonth),
+        supabase.from('orders').select('id').neq('status', 'cancelled').neq('status', 'refunded').gte('created_at', startOfToday),
+        supabase.from('orders').select('id, total_amount, created_at, status').neq('status', 'cancelled').neq('status', 'refunded').gte('created_at', thirtyDaysAgo),
+        supabase.from('order_items').select('product_name, total_price').gte('created_at', startOfMonth)
+      ]);
+
+      const revenueMonth = (monthlyRes.data || []).reduce((sum: number, o: { total_amount: number }) => sum + Number(o.total_amount), 0);
+      const ordersToday = (todayRes.data || []).length;
+
+      const allOrders = allOrdersRes.data || [];
+      const avgTicket = allOrders.length > 0
+        ? allOrders.reduce((sum: number, o: { total_amount: number }) => sum + Number(o.total_amount), 0) / allOrders.length
+        : 0;
+
+      // Build orders by day (last 30 days)
+      const dayMap: Record<string, number> = {};
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const key = d.toISOString().slice(0, 10);
+        dayMap[key] = 0;
+      }
+      allOrders.forEach((o: { created_at: string }) => {
+        const key = o.created_at.slice(0, 10);
+        if (key in dayMap) dayMap[key]++;
+      });
+
+      // Top products by revenue this month
+      const productMap: Record<string, number> = {};
+      (itemsRes.data || []).forEach((item: { product_name: string; total_price: number }) => {
+        productMap[item.product_name] = (productMap[item.product_name] || 0) + Number(item.total_price);
+      });
+      const topProducts = Object.entries(productMap)
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+
+      setMetrics({
+        revenueMonth,
+        ordersToday,
+        avgTicket,
+        topProducts,
+        ordersByDay: Object.entries(dayMap).map(([date, count]) => ({ date, count }))
+      });
+    } catch (err) {
+      console.error('Erro ao buscar métricas:', err);
+    } finally {
+      setMetricsLoading(false);
+    }
+  }, []);
+
+  // 5. Fetch Alerts
   const fetchAlertsData = useCallback(async () => {
     setAlertsLoading(true);
     try {
@@ -311,7 +385,9 @@ export function AdminPage() {
   useEffect(() => {
     if (!hasAdminAccess) return;
 
-    if (activeTab === 'products') {
+    if (activeTab === 'dashboard') {
+      fetchMetrics();
+    } else if (activeTab === 'products') {
       fetchProductsData();
     } else if (activeTab === 'categories') {
       fetchCategoriesData();
@@ -322,11 +398,11 @@ export function AdminPage() {
     } else if (activeTab === 'alerts') {
       fetchAlertsData();
     }
-  }, [activeTab, hasAdminAccess, fetchProductsData, fetchCategoriesData, fetchOrdersData, fetchSettingsData, fetchAlertsData]);
+  }, [activeTab, hasAdminAccess, fetchMetrics, fetchProductsData, fetchCategoriesData, fetchOrdersData, fetchSettingsData, fetchAlertsData]);
 
-  // Realtime subscription for Orders
+  // Realtime subscription for Orders + Dashboard
   useEffect(() => {
-    if (!hasAdminAccess || activeTab !== 'orders') return;
+    if (!hasAdminAccess || (activeTab !== 'orders' && activeTab !== 'dashboard')) return;
 
     const channel = supabase
       .channel('admin-orders-realtime')
@@ -334,8 +410,8 @@ export function AdminPage() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         () => {
-          // Refresh list automatically
-          fetchOrdersData();
+          if (activeTab === 'orders') fetchOrdersData();
+          if (activeTab === 'dashboard') fetchMetrics();
         }
       )
       .subscribe();
@@ -343,7 +419,7 @@ export function AdminPage() {
     return () => {
       channel.unsubscribe();
     };
-  }, [activeTab, hasAdminAccess, fetchOrdersData]);
+  }, [activeTab, hasAdminAccess, fetchOrdersData, fetchMetrics]);
 
   const handleDeleteProduct = async (id: string) => {
     if (!window.confirm('Tem certeza que deseja excluir esta camiseta?')) return;
@@ -480,7 +556,15 @@ export function AdminPage() {
         </div>
 
         {/* Tab triggers */}
-        <div className="flex bg-cinza-claro border border-cinza-claro/50 rounded-lg p-1 space-x-1 text-xs">
+        <div className="flex flex-wrap bg-cinza-claro border border-cinza-claro/50 rounded-lg p-1 gap-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-4 py-2 rounded-md font-semibold transition-smooth flex items-center space-x-1.5 ${activeTab === 'dashboard' ? 'bg-preto text-branco border-dourado shadow-xs' : 'text-cinza-escuro hover:text-preto'}`}
+          >
+            <BarChart2 className="h-4 w-4" />
+            <span>Dashboard</span>
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('products')}
@@ -526,6 +610,144 @@ export function AdminPage() {
 
       {/* Main Panel Content */}
       <div className="bg-branco border border-cinza-claro rounded-lg shadow-xs overflow-hidden">
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="p-6 space-y-8">
+            <div className="flex items-center justify-between">
+              <h2 className="font-heading text-2xl tracking-wide text-preto">VISÃO GERAL DO NEGÓCIO</h2>
+              <button
+                type="button"
+                onClick={fetchMetrics}
+                className="flex items-center gap-1.5 text-xs text-cinza-escuro hover:text-preto font-semibold transition-smooth"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Atualizar
+              </button>
+            </div>
+
+            {metricsLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-28 bg-cinza-claro animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : metrics ? (
+              <>
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-cinza-claro/50 border border-cinza-claro rounded-xl p-5 space-y-2">
+                    <div className="flex items-center gap-2 text-verde-escuro">
+                      <DollarSign className="h-5 w-5" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Faturamento do Mês</span>
+                    </div>
+                    <p className="font-heading text-3xl text-dourado">
+                      R$ {metrics.revenueMonth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] text-cinza-escuro font-light">Pedidos com status &quot;pago&quot; no mês atual</p>
+                  </div>
+
+                  <div className="bg-cinza-claro/50 border border-cinza-claro rounded-xl p-5 space-y-2">
+                    <div className="flex items-center gap-2 text-verde-escuro">
+                      <Package className="h-5 w-5" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Pedidos Hoje</span>
+                    </div>
+                    <p className="font-heading text-3xl text-preto">{metrics.ordersToday}</p>
+                    <p className="text-[10px] text-cinza-escuro font-light">Novos pedidos nas últimas 24h</p>
+                  </div>
+
+                  <div className="bg-cinza-claro/50 border border-cinza-claro rounded-xl p-5 space-y-2">
+                    <div className="flex items-center gap-2 text-verde-escuro">
+                      <TrendingUp className="h-5 w-5" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Ticket Médio (30d)</span>
+                    </div>
+                    <p className="font-heading text-3xl text-preto">
+                      R$ {metrics.avgTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] text-cinza-escuro font-light">Valor médio por pedido nos últimos 30 dias</p>
+                  </div>
+                </div>
+
+                {/* Orders By Day Chart */}
+                <div className="bg-cinza-claro/30 border border-cinza-claro rounded-xl p-5 space-y-4">
+                  <h3 className="font-heading text-sm text-preto tracking-wider uppercase">Pedidos — Últimos 30 Dias</h3>
+                  {(() => {
+                    const maxCount = Math.max(...metrics.ordersByDay.map((d) => d.count), 1);
+                    const chartH = 80;
+                    const barW = 8;
+                    const gap = 3;
+                    const totalW = metrics.ordersByDay.length * (barW + gap);
+                    return (
+                      <div className="overflow-x-auto">
+                        <svg width={totalW} height={chartH + 20} aria-label="Gráfico de pedidos por dia" role="img">
+                          {metrics.ordersByDay.map((d, i) => {
+                            const barH = maxCount > 0 ? (d.count / maxCount) * chartH : 0;
+                            const x = i * (barW + gap);
+                            const y = chartH - barH;
+                            return (
+                              <g key={d.date}>
+                                <rect
+                                  x={x}
+                                  y={y}
+                                  width={barW}
+                                  height={barH || 1}
+                                  fill={d.count > 0 ? '#1a5c3a' : '#e5e7eb'}
+                                  rx={2}
+                                >
+                                  <title>{d.date}: {d.count} pedido(s)</title>
+                                </rect>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                        <div className="flex justify-between text-[9px] text-cinza-escuro font-mono mt-1">
+                          <span>{metrics.ordersByDay[0]?.date?.slice(5)}</span>
+                          <span>{metrics.ordersByDay[metrics.ordersByDay.length - 1]?.date?.slice(5)}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Top Products */}
+                {metrics.topProducts.length > 0 && (
+                  <div className="bg-cinza-claro/30 border border-cinza-claro rounded-xl p-5 space-y-4">
+                    <h3 className="font-heading text-sm text-preto tracking-wider uppercase">Top Produtos do Mês</h3>
+                    <div className="space-y-2">
+                      {metrics.topProducts.map((p, idx) => {
+                        const pct = metrics.topProducts[0].total > 0
+                          ? (p.total / metrics.topProducts[0].total) * 100
+                          : 0;
+                        return (
+                          <div key={p.name} className="flex items-center gap-3">
+                            <span className="text-xs font-bold text-cinza-escuro w-4">{idx + 1}</span>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="font-semibold text-preto truncate max-w-[60%]">{p.name}</span>
+                                <span className="text-dourado font-heading">
+                                  R$ {p.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              <div className="h-1.5 bg-cinza-claro rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-verde-escuro rounded-full transition-all duration-700"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-cinza-escuro py-10 text-center">Nenhum dado disponível ainda.</p>
+            )}
+          </div>
+        )}
+
         {/* Products Tab */}
         {activeTab === 'products' && (
           <div className="p-6 space-y-6">

@@ -77,8 +77,11 @@ export function useProducts() {
   const getProducts = useCallback(async (filters?: {
     categoryId?: string | string[];
     teamType?: string;
+    season?: string;
     featured?: boolean;
     search?: string;
+    priceMin?: number;
+    priceMax?: number;
   }): Promise<Product[]> => {
     setLoading(true);
     setError(null);
@@ -98,8 +101,15 @@ export function useProducts() {
       if (filters?.teamType) {
         query = query.eq('team_type', filters.teamType);
       }
+      if (filters?.season) {
+        query = query.eq('season', filters.season);
+      }
       if (filters?.featured !== undefined) {
         query = query.eq('featured', filters.featured);
+      }
+      if (filters?.search) {
+        const searchPattern = `%${filters.search}%`;
+        query = query.or(`name.ilike.${searchPattern},description.ilike.${searchPattern},sku.ilike.${searchPattern}`);
       }
 
       const { data, error: err } = await query.order('created_at', { ascending: false });
@@ -107,15 +117,18 @@ export function useProducts() {
       if (err) throw err;
       let results = (data || []) as Product[];
 
-      // In-memory simple search if search parameter is present and DB index isn't used
-      if (filters?.search) {
-        const searchLower = filters.search.toLowerCase();
-        results = results.filter(
-          (p) =>
-            p.name.toLowerCase().includes(searchLower) ||
-            p.description?.toLowerCase().includes(searchLower) ||
-            p.sku.toLowerCase().includes(searchLower)
-        );
+      // In-memory price filtering
+      if (filters?.priceMin !== undefined) {
+        results = results.filter((p) => {
+          const price = p.sale_price ?? p.regular_price;
+          return price >= filters.priceMin!;
+        });
+      }
+      if (filters?.priceMax !== undefined) {
+        results = results.filter((p) => {
+          const price = p.sale_price ?? p.regular_price;
+          return price <= filters.priceMax!;
+        });
       }
 
       return results;

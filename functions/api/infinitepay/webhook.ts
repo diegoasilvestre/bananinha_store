@@ -61,6 +61,15 @@ export async function onRequestPost(context: any) {
               payload: { order }
             })
           });
+
+          // Send Resend confirmation email (fire-and-forget, non-blocking)
+          fetch(`${origin}/api/email/send-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order })
+          }).catch((emailErr) => {
+            console.error('Email notification trigger error:', emailErr);
+          });
         } catch (notifyErr) {
           console.error('Webhook Notification Trigger Error:', notifyErr);
         }
