@@ -699,12 +699,12 @@ Quando `tracking_code` está preenchido, um link direto para o site dos Correios
 - [x] **Montador de look** — seção de complementos na página do produto
 
 ### Sprint 7 — Polimento
-- [ ] SEO (meta tags, sitemap, robots.txt)
-- [ ] Performance (lazy load imagens via Supabase Storage CDN, code splitting)
-- [ ] PWA básico (manifest + service worker)
+- [x] SEO (meta tags, sitemap, robots.txt)
+- [x] Performance (lazy load imagens via Supabase Storage CDN, code splitting)
+- [x] PWA básico (manifest + service worker)
 - [ ] Testes nos principais fluxos
 - [ ] Domínio apontado para o Pages
-- [ ] Visualizador de nome/número *(se viável)*
+- [x] Visualizador de nome/número *(se viável)*
 
 ---
 
