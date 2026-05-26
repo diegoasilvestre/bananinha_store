@@ -10,6 +10,7 @@ import { CartDrawer } from './components/cart/CartDrawer';
 import { HomePage } from './pages/HomePage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
+import { PoliciesPage } from './pages/PoliciesPage';
 
 // Lazy Loaded Pages for performance optimization
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage').then(module => ({ default: module.CheckoutPage })));
@@ -84,6 +85,7 @@ function AppContent() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/policies" element={<PoliciesPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

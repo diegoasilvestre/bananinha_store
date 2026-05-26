@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingBag, ChevronRight, Truck, ShieldCheck, Mail, Sparkles } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Truck, ShieldCheck, Mail, Sparkles, ChevronLeft, ZoomIn, ZoomOut, X } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import type { Product, ProductVariation } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
@@ -22,6 +22,28 @@ export function ProductDetailPage() {
     image: product?.main_image || undefined
   });
   const [activeImage, setActiveImage] = useState('');
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  const allImages = product ? [product.main_image, ...(product.images || [])].filter(Boolean) as string[] : [];
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (allImages.length <= 1) return;
+    const currentIndex = allImages.indexOf(activeImage);
+    const prevIndex = currentIndex === 0 ? allImages.length - 1 : currentIndex - 1;
+    setActiveImage(allImages[prevIndex]);
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (allImages.length <= 1) return;
+    const currentIndex = allImages.indexOf(activeImage);
+    const nextIndex = currentIndex === allImages.length - 1 ? 0 : currentIndex + 1;
+    setActiveImage(allImages[nextIndex]);
+  };
   const [related, setRelated] = useState<Product[]>([]);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -359,30 +381,62 @@ export function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
           {/* Shirt Image Display */}
           <div className="flex flex-col space-y-4 w-full">
-            <div className="bg-branco p-6 rounded-lg border border-cinza-claro flex justify-center items-center aspect-square overflow-hidden shadow-xs w-full relative group">
+            <div 
+              onClick={() => activeImage && setIsLightboxOpen(true)}
+              className="relative max-w-md mx-auto aspect-[3/4] w-full bg-branco border border-cinza-claro rounded-lg flex items-center justify-center p-4 overflow-hidden shadow-xs group cursor-zoom-in"
+            >
               {activeImage ? (
                 <img
                   src={activeImage}
                   alt={product.name}
-                  className="max-h-[600px] w-auto object-contain hover:scale-102 transition-smooth"
+                  className="max-h-full max-w-full object-contain hover:scale-105 transition-smooth"
                 />
               ) : (
                 <span className="text-cinza-escuro/40 uppercase tracking-widest text-xs">Sem Imagem</span>
               )}
+
+              {/* Magnifying Glass Indicator on Hover */}
+              {activeImage && (
+                <div className="absolute top-3 right-3 bg-preto/70 text-branco p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow pointer-events-none">
+                  <ZoomIn className="h-4 w-4" />
+                </div>
+              )}
+
+              {/* Navigation Arrows */}
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevImage}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-preto/70 hover:bg-dourado text-branco hover:text-preto p-2 rounded-full transition-smooth opacity-0 group-hover:opacity-100 z-10 shadow"
+                    aria-label="Imagem anterior"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextImage}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-preto/70 hover:bg-dourado text-branco hover:text-preto p-2 rounded-full transition-smooth opacity-0 group-hover:opacity-100 z-10 shadow"
+                    aria-label="Próxima imagem"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
             </div>
             
-            {product.images && product.images.length > 0 && (
-              <div className="flex items-center space-x-2 overflow-x-auto py-2 scrollbar-thin scrollbar-thumb-cinza-escuro">
-                {[product.main_image, ...product.images].filter(Boolean).map((img, idx) => (
+            {allImages.length > 1 && (
+              <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 max-w-md mx-auto w-full scrollbar-none">
+                {allImages.map((img, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setActiveImage(img!)}
-                    className={`w-20 h-20 rounded border-2 flex-shrink-0 overflow-hidden bg-branco transition-smooth ${
-                      activeImage === img ? 'border-dourado shadow-md' : 'border-cinza-claro hover:border-cinza-escuro'
+                    onClick={() => setActiveImage(img)}
+                    className={`w-14 h-14 rounded border-2 flex-shrink-0 overflow-hidden bg-branco transition-smooth ${
+                      activeImage === img ? 'border-dourado shadow-sm' : 'border-cinza-claro hover:border-cinza-escuro'
                     }`}
                   >
-                    <img src={img!} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -850,6 +904,117 @@ export function ProductDetailPage() {
           </div>
         )}
       </main>
+
+      {/* Lightbox Modal for Image Zoom */}
+      {isLightboxOpen && activeImage && (
+        <div className="fixed inset-0 z-60 bg-preto/95 flex flex-col justify-between p-4 animate-fade-in" role="dialog" aria-modal="true">
+          {/* Header Controls */}
+          <div className="flex justify-between items-center z-10 text-branco">
+            <span className="text-xxs tracking-wider font-semibold opacity-75">
+              {allImages.indexOf(activeImage) + 1} de {allImages.length}
+            </span>
+            <div className="flex items-center space-x-4">
+              <button
+                type="button"
+                onClick={() => setZoomLevel(prev => Math.max(1, prev - 0.5))}
+                disabled={zoomLevel === 1}
+                className="hover:text-dourado p-1.5 transition-smooth disabled:opacity-30"
+                title="Reduzir zoom"
+              >
+                <ZoomOut className="h-5 w-5" />
+              </button>
+              <span className="text-xs font-semibold select-none">{zoomLevel.toFixed(1)}x</span>
+              <button
+                type="button"
+                onClick={() => setZoomLevel(prev => Math.min(4, prev + 0.5))}
+                disabled={zoomLevel === 4}
+                className="hover:text-dourado p-1.5 transition-smooth disabled:opacity-30"
+                title="Aumentar zoom"
+              >
+                <ZoomIn className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLightboxOpen(false);
+                  setZoomLevel(1);
+                }}
+                className="bg-cinza-escuro/45 hover:bg-cinza-escuro/70 p-2 rounded-full transition-smooth"
+                title="Fechar visualização"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Image Display Area with Pan/Zoom */}
+          <div className="flex-grow flex items-center justify-center overflow-hidden relative">
+            <div 
+              className="transition-transform duration-200 ease-out select-none flex items-center justify-center max-h-full max-w-full"
+              style={{ transform: `scale(${zoomLevel})` }}
+            >
+              <img
+                src={activeImage}
+                alt={product?.name || 'Manto'}
+                className="max-h-[80vh] max-w-[90vw] object-contain cursor-zoom-out"
+                onClick={() => {
+                  setIsLightboxOpen(false);
+                  setZoomLevel(1);
+                }}
+              />
+            </div>
+
+            {/* Lightbox Gallery Navigation Arrows */}
+            {allImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    handlePrevImage(e);
+                    setZoomLevel(1);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-preto/50 hover:bg-dourado text-branco hover:text-preto p-3 rounded-full transition-smooth shadow z-10"
+                  aria-label="Imagem anterior"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    handleNextImage(e);
+                    setZoomLevel(1);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-preto/50 hover:bg-dourado text-branco hover:text-preto p-3 rounded-full transition-smooth shadow z-10"
+                  aria-label="Próxima imagem"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Lightbox Footer Thumbnails */}
+          {allImages.length > 1 && (
+            <div className="flex justify-center gap-2 py-2 overflow-x-auto max-w-lg mx-auto w-full z-10">
+              {allImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setActiveImage(img);
+                    setZoomLevel(1);
+                  }}
+                  className={`w-12 h-12 rounded border flex-shrink-0 overflow-hidden transition-smooth ${
+                    activeImage === img ? 'border-dourado scale-105' : 'border-cinza-escuro/40 opacity-50 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

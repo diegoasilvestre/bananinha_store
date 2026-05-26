@@ -37,13 +37,19 @@ export function Footer() {
           <h3 className="font-heading text-sm text-branco tracking-wider uppercase">Suporte</h3>
           <ul className="space-y-2 font-light">
             <li>
-              <a href="#FAQ" className="hover:text-dourado transition-smooth">Dúvidas Frequentes</a>
+              <a href="https://wa.me/5511940177140?text=Ol%C3%A1%2C%20tenho%20uma%20d%C3%BAvida%20sobre%20as%20camisas." target="_blank" rel="noopener noreferrer" className="hover:text-dourado transition-smooth">Dúvidas Frequentes</a>
             </li>
             <li>
-              <a href="#Envio" className="hover:text-dourado transition-smooth">Políticas de Envio e Frete</a>
+              <Link to="/policies#shipping" className="hover:text-dourado transition-smooth">Políticas de Envio e Frete</Link>
             </li>
             <li>
-              <a href="#Trocas" className="hover:text-dourado transition-smooth">Trocas e Devoluções</a>
+              <Link to="/policies#refund" className="hover:text-dourado transition-smooth">Trocas e Devoluções</Link>
+            </li>
+            <li>
+              <Link to="/policies#terms" className="hover:text-dourado transition-smooth">Termos de Serviço</Link>
+            </li>
+            <li>
+              <Link to="/policies#privacy" className="hover:text-dourado transition-smooth">Política de Privacidade</Link>
             </li>
           </ul>
         </div>
@@ -61,9 +67,8 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="w-full px-4 lg:px-8 mt-12 pt-6 border-t border-cinza-escuro/20 flex flex-col sm:flex-row justify-between items-center text-center font-light gap-4">
+      <div className="w-full px-4 lg:px-8 mt-8 pt-6 border-t border-cinza-escuro/20 text-center font-light text-cinza-escuro/50 text-[10px]">
         <p>&copy; {currentYear} Bananinha Store. Todos os direitos reservados.</p>
-        <p>Desenvolvido localmente com React 19, Vite & Tailwind CSS v4.</p>
       </div>
     </footer>
   );
