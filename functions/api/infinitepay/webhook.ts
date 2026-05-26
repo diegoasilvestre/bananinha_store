@@ -35,6 +35,36 @@ export async function onRequestPost(context: any) {
         console.error('Webhook DB Error:', error);
         throw new Error('Falha ao atualizar o banco de dados');
       }
+
+      // Fetch the full order details along with items for notification
+      const { data: order, error: orderErr } = await supabaseAdmin
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('id', orderNsu)
+        .single();
+
+      if (orderErr) {
+        console.error('Webhook Fetch Order Error:', orderErr);
+      } else if (order) {
+        try {
+          const origin = new URL(context.request.url).origin;
+          const whatsappSecret = context.env.WHATSAPP_SECRET || '';
+          
+          await fetch(`${origin}/api/whatsapp/notify?secret=${encodeURIComponent(whatsappSecret)}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-WhatsApp-Secret': whatsappSecret
+            },
+            body: JSON.stringify({
+              event: 'order_paid',
+              payload: { order }
+            })
+          });
+        } catch (notifyErr) {
+          console.error('Webhook Notification Trigger Error:', notifyErr);
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), { 

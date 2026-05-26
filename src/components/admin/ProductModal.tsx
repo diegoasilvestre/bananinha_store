@@ -47,6 +47,7 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
   const [bucketImages, setBucketImages] = useState<string[]>([]);
   const [showImageLibrary, setShowImageLibrary] = useState(false);
   const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // New category inline creation
   const [showNewCategory, setShowNewCategory] = useState(false);
@@ -123,7 +124,13 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
       setDetailImages([]);
       setFeatured(false);
       setActive(true);
-      setVariations([]);
+      setVariations([
+        { size: 'P', stock: 10 },
+        { size: 'M', stock: 10 },
+        { size: 'G', stock: 10 },
+        { size: 'GG', stock: 10 },
+        { size: 'XGG', stock: 10 }
+      ]);
     }
   }, [productToEdit, isOpen]);
 
@@ -398,22 +405,18 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-preto/85 backdrop-blur-xs" onClick={onClose}></div>
+    <div className="fixed inset-0 z-50 bg-[#0d0d0d] overflow-y-auto text-branco flex flex-col animate-fade-in" role="dialog" aria-modal="true">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-cinza-escuro/20 p-6 bg-[#0a0a0a] sticky top-0 z-20">
+        <h2 className="font-heading text-2xl tracking-wide text-branco uppercase">
+          {productToEdit ? 'EDITAR CAMISETA' : 'CADASTRAR NOVA CAMISETA'}
+        </h2>
+        <button type="button" onClick={onClose} className="text-cinza-claro hover:text-branco hover:bg-cinza-escuro/40 p-2 rounded-full transition-smooth">
+          <X className="h-6 w-6" />
+        </button>
+      </div>
 
-      {/* Modal Content - Premium Dark Theme */}
-      <div className="relative bg-[#0d0d0d] border border-dourado/30 rounded-lg max-w-4xl w-full p-6 shadow-2xl z-10 max-h-[90vh] overflow-y-auto text-branco animate-scale-in flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-cinza-escuro/20 pb-4 mb-6 sticky top-0 bg-[#0d0d0d] z-20">
-          <h2 className="font-heading text-2xl tracking-wide text-branco uppercase">
-            {productToEdit ? 'EDITAR CAMISETA' : 'CADASTRAR NOVA CAMISETA'}
-          </h2>
-          <button type="button" onClick={onClose} className="text-cinza-claro hover:text-branco hover:bg-cinza-escuro/40 p-2 rounded-full transition-smooth">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
+      <div className="flex-grow p-6 md:p-8 max-w-7xl mx-auto w-full">
         {error && (
           <div className="mb-6 bg-vermelho-alerta/15 border border-vermelho-alerta/35 text-vermelho-alerta p-3 rounded text-xs flex items-center space-x-2">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
@@ -421,7 +424,7 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 pb-20">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column: Core information */}
               <div className="space-y-4">
@@ -816,50 +819,12 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
                     <label className="text-xs font-semibold text-cinza-claro block">Acessar Banco de Imagens</label>
                     <button
                       type="button"
-                      onClick={() => setShowImageLibrary(!showImageLibrary)}
-                      className="text-dourado hover:text-dourado-claro text-[10px] font-bold tracking-wider"
+                      onClick={() => setShowImageLibrary(true)}
+                      className="bg-preto border border-dourado text-dourado hover:bg-dourado hover:text-preto px-4 py-1.5 rounded text-[10px] font-bold tracking-wider transition-smooth"
                     >
-                      {showImageLibrary ? 'FECHAR BANCO' : 'ABRIR BANCO'}
+                      ABRIR BANCO DE IMAGENS
                     </button>
                   </div>
-
-                  {showImageLibrary && (
-                    <div className="border border-[#2a2a2a] rounded bg-[#131313] p-3 space-y-3 animate-fade-in">
-                      {loadingLibrary ? (
-                        <p className="text-[10px] text-cinza-claro/40 text-center py-2 animate-pulse">Carregando banco de imagens...</p>
-                      ) : bucketImages.length === 0 ? (
-                        <p className="text-[10px] text-cinza-claro/40 text-center py-2">Nenhuma imagem encontrada no bucket.</p>
-                      ) : (
-                        <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1">
-                          {bucketImages.map((url, idx) => (
-                            <div key={idx} className="relative aspect-square border border-[#2a2a2a] rounded overflow-hidden group bg-[#0d0d0d]">
-                              <img src={url} alt="Banco" className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-preto/85 opacity-0 group-hover:opacity-100 flex flex-col justify-center items-center gap-1 transition-opacity">
-                                <button
-                                  type="button"
-                                  onClick={() => setMainImage(url)}
-                                  className="bg-branco text-preto text-[8px] font-bold px-1.5 py-0.5 rounded shadow hover:bg-dourado hover:text-preto"
-                                >
-                                  Principal
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (!detailImages.includes(url)) {
-                                      setDetailImages([...detailImages, url]);
-                                    }
-                                  }}
-                                  className="bg-branco text-preto text-[8px] font-bold px-1.5 py-0.5 rounded shadow hover:bg-dourado hover:text-preto"
-                                >
-                                  Detalhe
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {/* Imagens de Detalhe (Galeria) */}
@@ -997,6 +962,93 @@ export function ProductModal({ isOpen, onClose, onSave, productToEdit }: Product
             </div>
           </form>
         </div>
-      </div>
-    );
-  }
+
+      {showImageLibrary && (
+        <div className="fixed inset-0 z-60 overflow-y-auto flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-preto/90 backdrop-blur-xs" onClick={() => setShowImageLibrary(false)}></div>
+
+          {/* Large Modal Content */}
+          <div className="relative bg-[#0d0d0d] border border-dourado/30 rounded-lg max-w-5xl w-full p-6 shadow-2xl z-10 max-h-[85vh] overflow-y-auto flex flex-col text-branco animate-scale-in">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-cinza-escuro/20 pb-4 mb-4">
+              <div className="space-y-1">
+                <h3 className="font-heading text-xl tracking-wide text-branco uppercase">Banco de Imagens (Storage)</h3>
+                <p className="text-xxs text-cinza-claro/60">Selecione as imagens para o produto principal ou galeria de detalhes</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowImageLibrary(false)}
+                className="text-cinza-claro hover:text-branco hover:bg-cinza-escuro/40 p-2 rounded-full transition-smooth"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Filter Input */}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Filtrar por nome de arquivo (ex: spfc, flamengo, real...)"
+                className="w-full bg-[#161616] border border-[#2a2a2a] rounded px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-dourado text-branco placeholder-cinza-escuro/50"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {loadingLibrary ? (
+              <p className="text-xs text-cinza-claro/40 text-center py-10 animate-pulse">Carregando banco de imagens...</p>
+            ) : bucketImages.filter(url => {
+              if (!searchQuery.trim()) return true;
+              const filename = (url.split('/').pop()?.split('?')[0] || '').toLowerCase();
+              return filename.includes(searchQuery.toLowerCase());
+            }).length === 0 ? (
+              <p className="text-xs text-cinza-claro/40 text-center py-10">Nenhuma imagem encontrada.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 pr-1">
+                {bucketImages
+                  .filter(url => {
+                    if (!searchQuery.trim()) return true;
+                    const filename = (url.split('/').pop()?.split('?')[0] || '').toLowerCase();
+                    return filename.includes(searchQuery.toLowerCase());
+                  })
+                  .map((url, idx) => {
+                    const filename = url.split('/').pop()?.split('?')[0] || '';
+                    return (
+                      <div key={idx} className="relative aspect-square border border-[#2a2a2a] rounded overflow-hidden group bg-[#0d0d0d] flex flex-col justify-end">
+                        <img src={url} alt="Banco" className="absolute inset-0 w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-preto/85 opacity-0 group-hover:opacity-100 flex flex-col justify-center items-center gap-2 transition-opacity p-2">
+                          <span className="text-[8px] text-cinza-claro text-center break-all truncate max-w-full block mb-1">{filename}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMainImage(url);
+                              setShowImageLibrary(false);
+                            }}
+                            className="w-full bg-dourado text-preto text-[9px] font-bold py-1 rounded shadow hover:bg-dourado-claro transition-smooth"
+                          >
+                            Usar Principal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!detailImages.includes(url)) {
+                                setDetailImages([...detailImages, url]);
+                              }
+                            }}
+                            className="w-full bg-branco text-preto text-[9px] font-bold py-1 rounded shadow hover:bg-cinza-claro transition-smooth"
+                          >
+                            + Add Detalhe
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

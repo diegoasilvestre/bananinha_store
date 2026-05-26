@@ -21,6 +21,7 @@ export function ProductDetailPage() {
     description: product ? (product.short_desc || product.description || '').substring(0, 160) : 'Carregando detalhes do manto de futebol...',
     image: product?.main_image || undefined
   });
+  const [activeImage, setActiveImage] = useState('');
   const [related, setRelated] = useState<Product[]>([]);
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -151,6 +152,9 @@ export function ProductDetailPage() {
       const data = await getProductBySlug(slug);
       if (data) {
         setProduct(data);
+        if (data.main_image) {
+          setActiveImage(data.main_image);
+        }
         // Default select first available variation
         const firstAvailable = data.variations?.find((v) => v.stock > 0);
         setSelectedVariation(firstAvailable || data.variations?.[0] || null);
@@ -354,15 +358,34 @@ export function ProductDetailPage() {
         {/* Upper details grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
           {/* Shirt Image Display */}
-          <div className="bg-branco p-6 rounded-lg border border-cinza-claro flex justify-center items-center aspect-square overflow-hidden shadow-xs">
-            {product.main_image ? (
-              <img
-                src={product.main_image}
-                alt={product.name}
-                className="max-h-[600px] w-auto object-contain hover:scale-102 transition-smooth"
-              />
-            ) : (
-              <span className="text-cinza-escuro/40 uppercase tracking-widest text-xs">Sem Imagem</span>
+          <div className="flex flex-col space-y-4 w-full">
+            <div className="bg-branco p-6 rounded-lg border border-cinza-claro flex justify-center items-center aspect-square overflow-hidden shadow-xs w-full relative group">
+              {activeImage ? (
+                <img
+                  src={activeImage}
+                  alt={product.name}
+                  className="max-h-[600px] w-auto object-contain hover:scale-102 transition-smooth"
+                />
+              ) : (
+                <span className="text-cinza-escuro/40 uppercase tracking-widest text-xs">Sem Imagem</span>
+              )}
+            </div>
+            
+            {product.images && product.images.length > 0 && (
+              <div className="flex items-center space-x-2 overflow-x-auto py-2 scrollbar-thin scrollbar-thumb-cinza-escuro">
+                {[product.main_image, ...product.images].filter(Boolean).map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveImage(img!)}
+                    className={`w-20 h-20 rounded border-2 flex-shrink-0 overflow-hidden bg-branco transition-smooth ${
+                      activeImage === img ? 'border-dourado shadow-md' : 'border-cinza-claro hover:border-cinza-escuro'
+                    }`}
+                  >
+                    <img src={img!} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
@@ -395,7 +418,7 @@ export function ProductDetailPage() {
                 </span>
               </div>
               <p className="text-xxs text-cinza-escuro mt-1 font-light">
-                Ou em até 3x sem juros de R$ {(displayPrice / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} no cartão.
+                Parcelamento em até 12x no cartão de crédito via InfinitePay.
               </p>
             </div>
 

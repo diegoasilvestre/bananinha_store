@@ -57,6 +57,38 @@ export const onRequestPost = async (context: {
         break;
       }
 
+      case 'order_paid': {
+        const { order } = payload;
+        const total = Number(order.total_amount).toFixed(2);
+        const subtotal = Number(order.subtotal).toFixed(2);
+        const items = order.order_items || [];
+        
+        let itemsText = '';
+        for (const item of items) {
+          itemsText += `  - ${item.product_name} (${item.size}) x${item.quantity} - R$ ${Number(item.unit_price).toFixed(2)}\n`;
+        }
+
+        messageText = `✅ *Pedido Pago & Aprovado!* \n\n` +
+          `• *ID:* \`${order.id.slice(0, 8)}\`\n` +
+          `• *Cliente:* ${order.customer_name}\n` +
+          `• *E-mail:* ${order.customer_email}\n` +
+          `• *Fone:* ${order.customer_phone || 'Não informado'}\n\n` +
+          `📦 *Itens do Pedido:* \n${itemsText}\n` +
+          `🚚 *Entrega:* \n` +
+          `  - Rua: ${order.address_street}, ${order.address_number}\n` +
+          `  - Bairro: ${order.address_neighborhood || 'N/A'}\n` +
+          `  - Compl: ${order.address_complement || 'N/A'}\n` +
+          `  - Cidade/UF: ${order.address_city} - ${order.address_state}\n` +
+          `  - CEP: ${order.address_zip}\n\n` +
+          `💰 *Financeiro:* \n` +
+          `  - Subtotal: R$ ${subtotal}\n` +
+          `  - Frete: R$ ${Number(order.shipping_amount).toFixed(2)} (${order.shipping_method})\n` +
+          `  - Total Pago: R$ ${total}\n` +
+          `  - Método: ${order.payment_method === 'pix' ? 'Pix' : 'Cartão'}\n\n` +
+          `_Pronto para envio! Acesse o painel para atualizar o rastreamento._`;
+        break;
+      }
+
       case 'order_status_updated': {
         const { order, oldStatus, newStatus } = payload;
         const statusMap: Record<string, string> = {
