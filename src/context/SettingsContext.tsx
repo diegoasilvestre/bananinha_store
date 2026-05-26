@@ -19,7 +19,7 @@ const defaultSettings: StoreSettings = {
   store_name: 'Bananinha Store',
   store_tagline: 'As melhores camisetas do Brasil',
   hero_title: 'O MANTO DO SEU TIME COM O ACABAMENTO PREMIUM',
-  hero_subtitle: 'Vista a paixão pelo futebol com camisas oficiais selecionadas. Tecido tecnológico respirável, costuras reforçadas e escudos bordados de alta precisão.',
+  hero_subtitle: 'Vista a paixão pelo futebol com camisas selecionadas. Tecido tecnológico respirável, costuras reforçadas e escudos bordados de alta precisão.',
   whatsapp_number: '5511999999999',
   instagram_url: '',
   free_shipping_min: 299,

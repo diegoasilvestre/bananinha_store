@@ -209,7 +209,7 @@ export function ProductsPage() {
         {/* Top actions & Active filters */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-cinza-claro pb-4">
           <div>
-            <h1 className="font-heading text-3xl tracking-wide text-preto">CAMISETAS OFICIAIS</h1>
+            <h1 className="font-heading text-3xl tracking-wide text-preto">COLEÇÃO DE CAMISETAS</h1>
             <p className="text-xs text-cinza-escuro font-light">
               {products.length} {products.length === 1 ? 'manto encontrado' : 'mantos encontrados'}.
             </p>

@@ -63,7 +63,7 @@ export function HomePage() {
           <div className="space-y-6 animate-fade-in text-center lg:text-left flex flex-col items-center lg:items-start">
             <span className="inline-flex items-center space-x-2 bg-dourado/20 text-dourado-claro text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
               <Sparkles className="h-3.5 w-3.5 mr-1 text-dourado" />
-              Coleções Oficiais 2024/25
+              Coleções 2024/25
             </span>
             <h1 className="text-hero-title font-heading tracking-tight leading-none uppercase">
               {settings.hero_title}

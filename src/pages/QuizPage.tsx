@@ -239,7 +239,7 @@ export function QuizPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
-                    { label: 'Titular (Casa)', value: 'home', desc: 'As cores principais oficiais.' },
+                    { label: 'Titular (Casa)', value: 'home', desc: 'As cores principais.' },
                     { label: 'Reserva (Fora)', value: 'away', desc: 'Design alternativo de visitante.' },
                     { label: 'Tanto Faz / Neutro', value: '', desc: 'Qualquer opção disponível.' },
                   ].map((opt) => (

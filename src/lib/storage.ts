@@ -52,7 +52,7 @@ export async function uploadProductImage(file: File): Promise<string | null> {
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(filePath, finalFile, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: true,
         contentType,
       });

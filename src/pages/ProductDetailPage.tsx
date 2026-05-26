@@ -558,7 +558,7 @@ export function ProductDetailPage() {
                   </div>
                 </div>
                 <p className="text-[9px] text-cinza-escuro font-light leading-relaxed">
-                  Garanta o seu manto exclusivo na pré-venda. O produto será despachado imediatamente após o lançamento oficial.
+                  Garanta o seu manto exclusivo na pré-venda. O produto será despachado imediatamente após o lançamento.
                 </p>
               </div>
             )}
