@@ -3,10 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useSEO } from '../hooks/useSEO';
 
 type AuthMode = 'signin' | 'signup' | 'forgot';
 
 export function LoginPage() {
+  useSEO({
+    title: 'Acessar Conta | Bananinha Store',
+    description: 'Acesse sua conta na Bananinha Store para gerenciar seus pedidos e ver seus mantos favoritos.'
+  });
+
   const navigate = useNavigate();
   const { user } = useAuth();
 

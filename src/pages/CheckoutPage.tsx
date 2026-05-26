@@ -5,6 +5,7 @@ import { ShoppingBag, ChevronRight, AlertCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../hooks/useOrders';
+import { useSEO } from '../hooks/useSEO';
 
 const checkoutSchema = z.object({
   customerName: z.string().min(3, { message: 'O nome completo deve ter no mínimo 3 caracteres.' }),
@@ -23,6 +24,11 @@ const checkoutSchema = z.object({
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export function CheckoutPage() {
+  useSEO({
+    title: 'Finalizar Compra | Bananinha Store',
+    description: 'Preencha seus dados de envio e faça o pagamento do seu manto premium de forma 100% segura.'
+  });
+
   const { cart, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
   const { createOrder, validateCoupon, error: apiError, loading } = useOrders();

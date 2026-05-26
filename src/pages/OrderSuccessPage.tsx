@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { CheckCircle2, MessageSquare, ExternalLink, Printer, Clock } from 'lucide-react';
 import { useOrders } from '../hooks/useOrders';
+import { useSEO } from '../hooks/useSEO';
 
 interface OrderItemInfo {
   id: string;
@@ -39,6 +40,11 @@ interface OrderDetail {
 }
 
 export function OrderSuccessPage() {
+  useSEO({
+    title: 'Pedido Recebido | Bananinha Store',
+    description: 'Parabéns, seu pedido na Bananinha Store foi processado. Acompanhe o status do pagamento aqui.'
+  });
+
   const { orderId } = useParams<{ orderId: string }>();
   const { getOrderDetails, checkOrderStatus, loading, error } = useOrders();
   const [order, setOrder] = useState<OrderDetail | null>(null);

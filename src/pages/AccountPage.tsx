@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useSEO } from '../hooks/useSEO';
 
 interface Order {
   id: string;
@@ -46,6 +47,11 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Cl
 };
 
 export function AccountPage() {
+  useSEO({
+    title: 'Minha Conta | Bananinha Store',
+    description: 'Gerencie seus dados pessoais, visualize seus pedidos e acompanhe seus favoritos na Bananinha Store.'
+  });
+
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
