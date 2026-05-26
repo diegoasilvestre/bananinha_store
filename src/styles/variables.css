@@ -1,0 +1,24 @@
+:root {
+  /* Paleta principal — verde gramado + preto + dourado */
+  --verde-escuro:    #1a3a2a;   /* fundo header, botões principais */
+  --verde-medio:     #2d6a4f;   /* hovers, destaques */
+  --verde-claro:     #d8f3dc;   /* backgrounds suaves */
+  --preto:           #0d0d0d;   /* texto principal */
+  --cinza-escuro:    #2b2b2b;   /* texto secundário */
+  --cinza-claro:     #f5f5f5;   /* backgrounds */
+  --dourado:         #c9a84c;   /* preços, badges, estrelas */
+  --dourado-claro:   #f0d080;   /* highlights */
+  --branco:          #ffffff;
+  --vermelho-alerta: #e63946;   /* promoções, badges "NOVO" */
+
+  /* Fontes */
+  --font-heading: 'Bebas Neue', sans-serif;  /* impacto — títulos e preços */
+  --font-body:    'Inter', sans-serif;        /* legibilidade */
+
+  /* Estrutura */
+  --container-width: 1280px;
+  --header-height:   68px;
+  --radius-sm:       4px;
+  --radius-md:       8px;
+  --radius-lg:       16px;
+}

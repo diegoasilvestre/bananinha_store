@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+:root {
+  /* Paleta baseada na identidade visual do logotipo (Preto, Dourado e Branco) */
+  --verde-escuro:    #0a0a0c;   /* Fundo preto rico (headers, seções escuras) */
+  --verde-medio:     #1c1c22;   /* Preto charcoal para hovers, botões secundários */
+  --verde-claro:     #e2e8f0;   /* Cinza claro/branco para textos em fundos escuros */
+  --preto:           #050505;   /* Preto puro */
+  --cinza-escuro:    #475569;   /* Cinza para textos secundários */
+  --cinza-claro:     #f8fafc;   /* Fundo geral da página (off-white) */
+  --dourado:         #d4af37;   /* Dourado metálico principal */
+  --dourado-claro:   #f3dfa2;   /* Dourado claro para destaques */
+  --branco:          #ffffff;
+  --vermelho-alerta: #ef4444;   /* Alertas e erros */
+
+  /* Fontes */
+  --font-heading: 'Bebas Neue', sans-serif;  /* impacto — títulos e preços */
+  --font-body:    'Inter', sans-serif;        /* legibilidade */
+
+  /* Estrutura */
+  --container-width: 1800px;
+  --header-height:   68px;
+  --radius-sm:       4px;
+  --radius-md:       8px;
+  --radius-lg:       16px;
+}
+
+@theme {
+  --color-verde-escuro: var(--verde-escuro);
+  --color-verde-medio: var(--verde-medio);
+  --color-verde-claro: var(--verde-claro);
+  --color-preto: var(--preto);
+  --color-cinza-escuro: var(--cinza-escuro);
+  --color-cinza-claro: var(--cinza-claro);
+  --color-dourado: var(--dourado);
+  --color-dourado-claro: var(--dourado-claro);
+  --color-branco: var(--branco);
+  --color-vermelho-alerta: var(--vermelho-alerta);
+
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body), sans-serif;
+    color: var(--preto);
+    background-color: var(--cinza-claro);
+    margin: 0;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading), sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2s infinite ease-in-out;
+}
+
+.transition-smooth {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tipografia Dinâmica */
+.text-hero-title {
+  font-size: clamp(2.5rem, 5.5vw, 5.5rem);
+  line-height: 1.1;
+}
+
+.text-section-title {
+  font-size: clamp(2rem, 4vw, 3.8rem);
+}
+
+.text-body-highlight {
+  font-size: clamp(1rem, 1.8vw, 1.4rem);
+}
+
+/* Wrapper Global Centralizado e Ultra Fluido - Edge-to-Edge */
+.wrapper-global {
+  width: 94%;
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(1rem, 2vw, 3rem);
+  padding-right: clamp(1rem, 2vw, 3rem);
+}
+
+/* Grid de Produtos Fluido - Imponente no Desktop */
+.grid-products-fluid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+/* Grid de Categorias Adaptável - Sem Transbordamento */
+.grid-categories-adaptive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
+}
+

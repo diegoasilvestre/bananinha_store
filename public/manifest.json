@@ -1,0 +1,28 @@
+{
+  "short_name": "Bananinha",
+  "name": "Bananinha Store",
+  "description": "Sua loja premium de mantos e camisas de futebol. Qualidade e acabamento premium.",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f5f5f5",
+  "theme_color": "#0d0d0d",
+  "display": "standalone",
+  "orientation": "portrait"
+}
