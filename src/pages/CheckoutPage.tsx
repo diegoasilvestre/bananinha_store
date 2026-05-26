@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { z } from 'zod';
-import { ShoppingBag, ChevronRight, Check, AlertCircle } from 'lucide-react';
+import { ShoppingBag, ChevronRight, AlertCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../hooks/useOrders';
@@ -26,7 +26,6 @@ export function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
   const { user } = useAuth();
   const { createOrder, validateCoupon, error: apiError, loading } = useOrders();
-  const navigate = useNavigate();
 
   // Form states
   const [formData, setFormData] = useState<Partial<CheckoutFormValues>>({
