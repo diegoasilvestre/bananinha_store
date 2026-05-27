@@ -12,7 +12,7 @@ export function getOptimizedImageUrl(url: string | undefined | null, width: numb
   // Verifica se a URL pertence ao bucket do Supabase configurado
   if (url.includes('rlpcmwpfzdmqtfbtivgf.supabase.co/storage/v1/object/public/')) {
     return url
-      .replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + `?width=${width}&quality=80&format=webp`;
+      .replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + `?width=${width}&quality=80&format=webp&resize=contain`;
   }
   
   return url;
