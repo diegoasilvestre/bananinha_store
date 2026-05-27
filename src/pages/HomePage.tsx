@@ -6,6 +6,7 @@ import type { Product, Category } from '../hooks/useProducts';
 import { ProductCard } from '../components/product/ProductCard';
 import { useSEO } from '../hooks/useSEO';
 import { useSettings } from '../context/SettingsContext';
+import { getOptimizedImageUrl } from '../utils/image';
 
 export function HomePage() {
   const { settings } = useSettings();
@@ -97,13 +98,14 @@ export function HomePage() {
             >
               {activeHeroProduct?.main_image ? (
                 <img 
-                  src={activeHeroProduct.main_image} 
+                  src={getOptimizedImageUrl(activeHeroProduct.main_image, 600)} 
                   alt={activeHeroProduct.name} 
                   className="absolute inset-0 object-cover w-full h-full group-hover:scale-105 transition-smooth"
+                  fetchPriority="high"
                 />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-verde-medio to-preto flex items-center justify-center p-8">
-                  <img src="/logo.png" alt="Bananinha Store" className="w-32 h-32 object-contain opacity-45" />
+                  <img src="/logo.webp" alt="Bananinha Store" className="w-32 h-32 object-contain opacity-45" />
                 </div>
               )}
               

@@ -34,7 +34,7 @@ export function useSEO({ title, description, image, url }: SEOMetadata) {
     if (image) {
       setMetaTag('property', 'og:image', image);
     } else {
-      setMetaTag('property', 'og:image', 'https://bananinha-store.pages.dev/logo.png');
+      setMetaTag('property', 'og:image', 'https://bananinha-store.pages.dev/logo.webp');
     }
 
     if (url) {
@@ -52,7 +52,7 @@ export function useSEO({ title, description, image, url }: SEOMetadata) {
     if (image) {
       setMetaTag('name', 'twitter:image', image);
     } else {
-      setMetaTag('name', 'twitter:image', 'https://bananinha-store.pages.dev/logo.png');
+      setMetaTag('name', 'twitter:image', 'https://bananinha-store.pages.dev/logo.webp');
     }
 
     // 5. Canonical URL

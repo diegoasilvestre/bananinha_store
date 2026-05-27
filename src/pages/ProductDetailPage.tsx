@@ -9,13 +9,15 @@ import { supabase } from '../lib/supabase';
 import { triggerWhatsAppNotification } from '../lib/whatsapp';
 import { useSEO } from '../hooks/useSEO';
 import { useSettings } from '../context/SettingsContext';
+import { getOptimizedImageUrl } from '../utils/image';
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { getProductBySlug, getRelatedProducts, loading, error } = useProducts();
+  const { getProductBySlug, getRelatedProducts, error } = useProducts();
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   
   useSEO({
     title: product ? `${product.name}${product.season ? ` - Temporada ${product.season}` : ''}` : 'Carregando Manto...',
@@ -217,6 +219,7 @@ export function ProductDetailPage() {
   useEffect(() => {
     const loadProductData = async () => {
       if (!slug) return;
+      setInitialLoading(true);
       const data = await getProductBySlug(slug);
       if (data) {
         setProduct(data);
@@ -239,6 +242,7 @@ export function ProductDetailPage() {
           setSelectedLookItems(initial);
         }
       }
+      setInitialLoading(false);
     };
     loadProductData();
   }, [slug, getProductBySlug, getRelatedProducts]);
@@ -399,8 +403,7 @@ export function ProductDetailPage() {
     setLookAddedSuccess(true);
     setTimeout(() => setLookAddedSuccess(false), 4000);
   };
-
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="wrapper-global w-full py-20 text-center animate-pulse">
         <div className="h-8 bg-cinza-claro rounded w-1/4 mx-auto mb-4"></div>
@@ -481,10 +484,11 @@ export function ProductDetailPage() {
                       className="w-full h-full flex-shrink-0 snap-start cursor-zoom-in relative overflow-hidden"
                     >
                       <img
-                        src={img}
+                        src={getOptimizedImageUrl(img, 800)}
                         alt={`${product.name} - Imagem ${idx + 1}`}
                         style={activeImage === img ? hoverStyle : {}}
                         className="w-full h-full object-cover transition-transform duration-100 ease-out group-hover:scale-105"
+                        fetchPriority="high"
                       />
                     </div>
                   ))
@@ -536,7 +540,7 @@ export function ProductDetailPage() {
                       activeImage === img ? 'border-dourado shadow-sm' : 'border-cinza-claro hover:border-cinza-escuro'
                     }`}
                   >
-                    <img src={img} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img src={getOptimizedImageUrl(img, 120)} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

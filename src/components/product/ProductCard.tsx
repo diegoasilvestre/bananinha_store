@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ShoppingBag } from 'lucide-react';
 import type { Product } from '../../hooks/useProducts';
+import { getOptimizedImageUrl } from '../../utils/image';
 
 interface ProductCardProps {
   product: Product;
@@ -17,7 +18,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <Link to={`/product/${product.slug}`} className="relative aspect-square overflow-hidden bg-cinza-claro block">
         {product.main_image ? (
           <img
-            src={product.main_image}
+            src={getOptimizedImageUrl(product.main_image, 400)}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
             loading="lazy"

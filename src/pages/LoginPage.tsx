@@ -187,7 +187,7 @@ export function LoginPage() {
             {/* Logo / Branding */}
             <div className="text-center space-y-2">
               <img
-                src="/logo.png"
+                src="/logo.webp"
                 alt="Bananinha Store"
                 className="h-12 mx-auto object-contain"
                 onError={(e) => {

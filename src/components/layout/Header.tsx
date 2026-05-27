@@ -35,20 +35,17 @@ export function Header() {
         >
           {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
-
         {/* Logo & Brand */}
         <Link to="/" className="flex items-center space-x-3 select-none">
           <img 
-            src="/logo.png" 
+            src="/logo.webp" 
             alt={`${settings.store_name} Logo`} 
             className="h-10 w-10 object-contain rounded-full border border-dourado" 
           />
           <span className="font-heading text-2xl tracking-wider text-dourado-claro hidden sm:inline-block">
             {settings.store_name.toUpperCase()}
           </span>
-        </Link>
-
-        {/* Navigation Links */}
+        </Link>        {/* Navigation Links */}
         <nav className="hidden lg:flex space-x-8 text-sm font-medium tracking-wide">
           <NavLink 
             to="/products" 
