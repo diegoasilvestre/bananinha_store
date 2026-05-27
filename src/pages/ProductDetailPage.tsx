@@ -110,6 +110,11 @@ export function ProductDetailPage() {
 
   const isCustomizationValid = !isCustomized || (customName.trim().length > 0 && customNumber.trim().length > 0);
 
+  // Dynamic customization price: R$ 6,00 per letter (excluding spaces) and R$ 15,00 per number/digit
+  const lettersCount = customName.replace(/\s/g, '').length;
+  const numbersCount = customNumber.replace(/\D/g, '').length;
+  const customizationPrice = isCustomized ? (lettersCount * 6.00 + numbersCount * 15.00) : 0;
+
   // Sprint 6: Pre-order & Look states
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [selectedLookItems, setSelectedLookItems] = useState<Record<string, boolean>>({});
@@ -306,7 +311,7 @@ export function ProductDetailPage() {
     if (!product || !selectedVariation || !isCustomizationValid) return;
 
     const basePrice = product.sale_price ?? product.regular_price;
-    const finalPrice = isCustomized ? basePrice + 15.00 : basePrice;
+    const finalPrice = basePrice + customizationPrice;
 
     addToCart({
       productId: product.id,
@@ -458,7 +463,7 @@ export function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
           {/* Shirt Image Display */}
           <div className="flex flex-col space-y-4 w-full">
-            <div className="relative max-w-md mx-auto aspect-[3/4] w-full bg-branco border border-cinza-claro rounded-lg overflow-hidden shadow-xs group">
+            <div className="relative max-w-md mx-auto aspect-square w-full bg-preto border-2 border-dourado/30 rounded-2xl overflow-hidden shadow-2xl group transition-all duration-300 hover:border-dourado hover:shadow-[0_0_25px_rgba(201,168,76,0.25)]">
               
               {/* Scroll Snap Swipeable Container */}
               <div 
@@ -473,13 +478,13 @@ export function ProductDetailPage() {
                       onClick={() => setIsLightboxOpen(true)}
                       onMouseMove={handleMouseMove}
                       onMouseLeave={handleMouseLeave}
-                      className="w-full h-full flex-shrink-0 snap-start flex items-center justify-center p-4 cursor-zoom-in relative overflow-hidden"
+                      className="w-full h-full flex-shrink-0 snap-start cursor-zoom-in relative overflow-hidden"
                     >
                       <img
                         src={img}
                         alt={`${product.name} - Imagem ${idx + 1}`}
                         style={activeImage === img ? hoverStyle : {}}
-                        className="max-h-full max-w-full object-contain transition-transform duration-100 ease-out"
+                        className="w-full h-full object-cover transition-transform duration-100 ease-out group-hover:scale-105"
                       />
                     </div>
                   ))
@@ -635,15 +640,15 @@ export function ProductDetailPage() {
                   className="h-4.5 w-4.5 accent-verde-escuro cursor-pointer"
                 />
                 <label htmlFor="customizationToggle" className="font-heading text-xs text-preto tracking-wider uppercase cursor-pointer select-none">
-                  Personalizar com Nome e Número (+ R$ 15,00)
+                  Personalizar com Nome e Número (+ R$ 6,00/letra e R$ 15,00/número)
                 </label>
               </div>
 
               {isCustomized && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-cinza-claro/30 border border-cinza-claro rounded-lg p-4 animate-fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 bg-cinza-claro/30 border border-cinza-claro rounded-lg p-5 animate-fade-in">
                   {/* Inputs */}
-                  <div className="space-y-3">
-                    <div className="space-y-1">
+                  <div className="sm:col-span-7 space-y-4">
+                    <div className="space-y-1.5">
                       <label className="text-[10px] font-semibold text-cinza-escuro block">Nome na Camiseta (Máx. 12 letras)</label>
                       <input
                         type="text"
@@ -653,7 +658,7 @@ export function ProductDetailPage() {
                         className="w-full bg-branco border border-cinza-claro rounded text-xs px-3 py-2 uppercase focus:outline-none focus:ring-1 focus:ring-verde-medio text-preto font-semibold"
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <label className="text-[10px] font-semibold text-cinza-escuro block">Número (Máx. 2 dígitos)</label>
                       <input
                         type="text"
@@ -663,50 +668,66 @@ export function ProductDetailPage() {
                         className="w-full bg-branco border border-cinza-claro rounded text-xs px-3 py-2 focus:outline-none focus:ring-1 focus:ring-verde-medio text-preto font-semibold"
                       />
                     </div>
+                    {customizationPrice > 0 && (
+                      <div className="bg-branco/50 border border-cinza-claro/50 rounded p-2.5 text-xs text-cinza-escuro">
+                        Valor adicional: <strong className="text-dourado">R$ {customizationPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                      </div>
+                    )}
                     <p className="text-[9px] text-cinza-escuro/60 leading-tight">
                       Atenção: verifique a grafia antes de adicionar ao carrinho. Produtos personalizados não podem ser trocados.
                     </p>
                   </div>
 
-                  {/* 3D-like Interactive visualizer mockup */}
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="relative bg-preto border border-dourado/30 rounded-lg p-4 flex flex-col items-center justify-center aspect-square w-full max-w-[180px] shadow-md overflow-hidden">
+                  {/* Football Jersey Visualizer Mockup */}
+                  <div className="sm:col-span-5 flex flex-col items-center justify-center">
+                    <div className="relative bg-slate-100 border border-slate-200 rounded-lg p-5 flex flex-col items-center justify-center aspect-[9/10] w-full max-w-[260px] shadow-sm overflow-hidden">
                       {/* Jersey silhouette back SVG */}
-                      <svg viewBox="0 0 100 120" className="w-full h-full text-verde-escuro drop-shadow-md">
-                        {/* Body */}
-                        <path d="M 20 20 L 30 10 L 70 10 L 80 20 L 85 55 L 73 57 L 73 110 L 27 110 L 27 57 L 15 55 Z" fill="currentColor" stroke="#c9a84c" strokeWidth="1" />
-                        {/* Sleeves details */}
-                        <path d="M 20 20 L 15 55" stroke="#c9a84c" strokeWidth="1" />
-                        <path d="M 80 20 L 85 55" stroke="#c9a84c" strokeWidth="1" />
-                        {/* Collar */}
-                        <path d="M 40 10 A 10 10 0 0 0 60 10 Z" fill="#0d0d0d" stroke="#c9a84c" strokeWidth="1" />
+                      <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm">
+                        {/* Shadow/Silhouette background jersey */}
+                        <path 
+                          d="M 36 15 L 20 20 L 10 36 L 18 39 L 26 32 L 26 85 L 74 85 L 74 32 L 82 39 L 90 36 L 80 20 L 64 15 C 60 20, 40 20, 36 15 Z" 
+                          fill="#ffffff" 
+                          stroke="#cbd5e1" 
+                          strokeWidth="2" 
+                          strokeLinejoin="round" 
+                        />
+                        {/* Neck collar insert (gray details) */}
+                        <path d="M 36 15 C 40 20, 60 20, 64 15 C 62 17, 38 17, 36 15 Z" fill="#64748b" />
+                        {/* Sleeve cuffs */}
+                        <path d="M 10 36 L 18 39" stroke="#64748b" strokeWidth="2" />
+                        <path d="M 90 36 L 82 39" stroke="#64748b" strokeWidth="2" />
+                        {/* Side panel stitch details */}
+                        <path d="M 26 32 L 26 85" stroke="#e2e8f0" strokeWidth="1" />
+                        <path d="M 74 32 L 74 85" stroke="#e2e8f0" strokeWidth="1" />
                         {/* Dynamic Name */}
                         <text 
                           x="50" 
-                          y="32" 
+                          y="30" 
                           textAnchor="middle" 
-                          fill="#c9a84c" 
-                          fontSize="7" 
-                          fontFamily="'Bebas Neue', sans-serif" 
-                          letterSpacing="0.5"
-                          className="uppercase font-bold tracking-widest transition-all duration-300"
+                          fill="#334155" 
+                          fontSize="6.5" 
+                          fontFamily="sans-serif" 
+                          fontWeight="bold"
+                          letterSpacing="0.8"
+                          className="uppercase transition-all duration-300"
                         >
                           {customName.trim() || 'SEU NOME'}
                         </text>
                         {/* Dynamic Number */}
                         <text 
                           x="50" 
-                          y="75" 
+                          y="66" 
                           textAnchor="middle" 
-                          fill="#c9a84c" 
-                          fontSize="36" 
-                          fontFamily="'Bebas Neue', sans-serif" 
-                          className="font-bold transition-all duration-300"
+                          fill="#334155" 
+                          fontSize="28" 
+                          fontFamily="sans-serif" 
+                          fontWeight="900"
+                          className="transition-all duration-300"
                         >
                           {customNumber.trim() || '10'}
                         </text>
                       </svg>
-                      <div className="absolute bottom-1 text-[8px] uppercase tracking-wider text-dourado font-semibold">
+                      <div className="absolute bottom-1.5 text-[8px] uppercase tracking-widest text-slate-500 font-semibold">
                         Pré-visualização
                       </div>
                     </div>
@@ -1168,19 +1189,19 @@ export function ProductDetailPage() {
                   <thead>
                     <tr className="bg-verde-escuro text-branco">
                       <th className="px-4 py-2.5 text-left font-heading tracking-wider">Tamanho</th>
-                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Busto (cm)</th>
                       <th className="px-4 py-2.5 text-center font-heading tracking-wider">Comprimento (cm)</th>
-                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Manga (cm)</th>
+                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Largura (cm)</th>
+                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Altura (cm)</th>
+                      <th className="px-4 py-2.5 text-center font-heading tracking-wider">Peso (kg)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      { size: 'PP', busto: '44–46', comp: '68–70', manga: '21–23' },
-                      { size: 'P', busto: '48–50', comp: '70–72', manga: '23–25' },
-                      { size: 'M', busto: '52–54', comp: '72–74', manga: '25–27' },
-                      { size: 'G', busto: '56–58', comp: '74–76', manga: '27–29' },
-                      { size: 'GG', busto: '60–62', comp: '76–78', manga: '29–31' },
-                      { size: 'XGG', busto: '64–66', comp: '78–80', manga: '31–33' },
+                      { size: 'P', comp: '69–71', larg: '49–51', alt: '162–170', peso: '50–62' },
+                      { size: 'M', comp: '71–73', larg: '51–53', alt: '170–176', peso: '62–78' },
+                      { size: 'G', comp: '73–75', larg: '53–55', alt: '176–182', peso: '78–83' },
+                      { size: 'GG', comp: '75–78', larg: '55–57', alt: '182–190', peso: '83–90' },
+                      { size: 'XGG', comp: '78–81', larg: '57–59', alt: '190–195', peso: '90–97' },
                     ].map((row, idx) => {
                       const variation = product.variations?.find((v) => v.size === row.size);
                       const isOutOfStockSize = variation ? variation.stock <= 0 : false;
@@ -1203,9 +1224,10 @@ export function ProductDetailPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.busto}</td>
                           <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.comp}</td>
-                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.manga}</td>
+                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.larg}</td>
+                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.alt}</td>
+                          <td className="px-4 py-3 text-center text-cinza-escuro font-mono">{row.peso}</td>
                         </tr>
                       );
                     })}
